@@ -39,6 +39,9 @@ abstract class Dataset[L, F](
 
   /** Creates a new dataset keeping only the features in the given set */
   def keepOnly(featuresToKeep:Set[Int]):Dataset[L, F]
+
+  /** Creates an empty dataset with the same lexicons */
+  def emptyDataset: Dataset[L, F]
 }
 
 /**
@@ -120,6 +123,13 @@ class BVFDataset[L, F] (
   override def keepOnly(featuresToKeep:Set[Int]):Dataset[L, F] = {
     throw new RuntimeException("Not supported yet!")
   }
+
+  override def emptyDataset: Dataset[L, F] =
+    new BVFDataset(
+      labelLexicon,
+      featureLexicon,
+      new ArrayBuffer[Int],
+      new ArrayBuffer[Array[Int]])
 }
 
 /**
@@ -234,6 +244,14 @@ class RVFDataset[L, F] (
 
     (newFeats.toArray, newVals.toArray)
   }
+
+  override def emptyDataset: Dataset[L, F] =
+    new RVFDataset(
+      labelLexicon,
+      featureLexicon,
+      new ArrayBuffer[Int],
+      new ArrayBuffer[Array[Int]],
+      new ArrayBuffer[Array[Double]])
 }
 
 object RVFDataset {
