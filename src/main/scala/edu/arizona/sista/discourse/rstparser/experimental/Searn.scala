@@ -68,7 +68,6 @@ class Searn(
               costMatrix = DenseMatrix.vertcat(costMatrix, costVector.toDenseMatrix)
             }
           }
-
         }
       }
 
@@ -77,7 +76,7 @@ class Searn(
       if (epoch == 0) {
         policy.learned.csc = csc
       } else {
-        policy.learned.csc.avgWeights += csc.avgWeights
+        policy.learned.csc.avgWeights = csc.avgWeights * learningRate + policy.learned.csc.avgWeights * (1 - learningRate)
       }
     }
   }
