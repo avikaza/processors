@@ -3,9 +3,14 @@ package edu.arizona.sista.discourse.rstparser.experimental
 import scala.math.sqrt
 import edu.arizona.sista.learning._
 import edu.arizona.sista.struct.{ Counter, Lexicon }
+import edu.arizona.sista.discourse.rstparser.StructureClassifier.{ LOWER, UPPER }
 import breeze.linalg._
 
-class CostSensitiveClassifier[L, F](val epochs: Int, val aggressiveness: Double) {
+class CostSensitiveClassifier[L, F](
+    val epochs: Int,
+    val aggressiveness: Double,
+    val scaleRange: Option[ScaleRange[F]] = None
+) {
   require(epochs > 0, "'epochs' should be greater than zero")
   require(aggressiveness > 0, "'aggressiveness' should be greater than zero")
 
@@ -40,9 +45,9 @@ class CostSensitiveClassifier[L, F](val epochs: Int, val aggressiveness: Double)
     featureLexicon = Lexicon(dataset.featureLexicon)
 
     for (epoch <- 0 until epochs; i <- shuffle(indices).values) {
-      val counter = dataset.featuresCounter(i)
-      val trueLabel = dataset.labels(i)
-      val feats = counterToSparseVector(counter, numFeatures)
+      val datum = dataset.mkDatum(i)
+      val trueLabel = labelLexicon.get(datum.label).get
+      val feats = mkFeatureVector(datum.featuresCounter)
       val predLabel = argmax(weights * feats)
       val predCost = costMatrix(i, predLabel)
 
@@ -58,18 +63,36 @@ class CostSensitiveClassifier[L, F](val epochs: Int, val aggressiveness: Double)
     }
   }
 
-  def predictLabel(datum: Datum[L, F]): L = {
+  def predictScores(datum: Datum[L, F]): DenseVector[Double] =
+    predictScores(datum.featuresCounter)
+
+  def predictScores(counter: Counter[F]): DenseVector[Double] =
+    avgWeights * mkFeatureVector(counter)
+
+  def mkFeatureVector(counter: Counter[F]): SparseVector[Double] = {
+    val scaledFeats = if (scaleRange.isDefined) {
+      Datasets.svmScaleDatum(counter, scaleRange.get, LOWER, UPPER)
+    } else {
+      counter
+    }
     val indexData = for {
-      (f, v) <- datum.featuresCounter.toSeq
+      (f, v) <- scaledFeats.toSeq
       i <- featureLexicon.get(f)
     } yield (i, v)
     val (index, data) = indexData.sortBy(_._1).unzip
-    val feats = new SparseVector(index.toArray, data.toArray, numFeatures)
-    predictLabel(feats)
+    new SparseVector(index.toArray, data.toArray, numFeatures)
   }
 
-  def predictLabel(feats: SparseVector[Double]): L =
-    labelLexicon.get(argmax(avgWeights * feats))
+  def predictLabeledScores(counter: Counter[F]): Seq[(L, Double)] =
+    predictScores(counter).valuesIterator.zipWithIndex.map {
+      case (s, i) => (labelLexicon.get(i), s)
+    }.toSeq
+
+  def predictLabel(datum: Datum[L, F]): L =
+    predictLabel(datum.featuresCounter)
+
+  def predictLabel(counter: Counter[F]): L =
+    labelLexicon.get(argmax(predictScores(counter)))
 }
 
 object CostSensitiveClassifier {
@@ -79,9 +102,4 @@ object CostSensitiveClassifier {
     DenseMatrix.tabulate[Double](dataset.size, dataset.numLabels) {
       (i, j) => if (dataset.labels(i) == j) 0 else 1
     }
-
-  def counterToSparseVector(counter: Counter[Int], length: Int): SparseVector[Double] = {
-    val (index, data) = counter.toSeq.sortBy(_._1).unzip
-    new SparseVector(index.toArray, data.toArray, length)
-  }
 }
