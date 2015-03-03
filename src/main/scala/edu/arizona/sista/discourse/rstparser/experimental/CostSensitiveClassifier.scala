@@ -80,7 +80,7 @@ object CostSensitiveClassifier {
       (i, j) => if (dataset.labels(i) == j) 0 else 1
     }
 
-  def counterToSparseVector(counter: Counter[Int], length: Int = Integer.MAX_VALUE): SparseVector[Double] = {
+  def counterToSparseVector(counter: Counter[Int], length: Int): SparseVector[Double] = {
     val (index, data) = counter.toSeq.sortBy(_._1).unzip
     new SparseVector(index.toArray, data.toArray, length)
   }
