@@ -9,8 +9,8 @@ class InterpolatedPolicy(val relModel: RelationClassifier) extends Policy {
   val expert: ExpertPolicy = new ExpertPolicy(relModel)
   var learned: LearnedPolicy = _
 
-  def getNextState(currState: State, goldTree: DiscourseTree, doc: Document): State =
-    policy.getNextState(currState, goldTree, doc)
+  def getNextState(currState: State, goldTree: DiscourseTree, edus: Array[Array[(Int, Int)]], doc: Document): State =
+    policy.getNextState(currState, goldTree, edus, doc)
 
   def policy: Policy =
     if (Random.nextDouble() <= expertProbability) expert else learned

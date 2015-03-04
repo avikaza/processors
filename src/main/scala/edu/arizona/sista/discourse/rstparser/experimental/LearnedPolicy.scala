@@ -13,8 +13,12 @@ class LearnedPolicy(
 ) extends Policy {
   val featureExtractor = new RelationFeatureExtractor
 
-  def getNextState(currState: State, goldTree: DiscourseTree, doc: Document): State = {
-    val edus = mkGoldEDUs(goldTree, doc)
+  def getNextState(
+    currState: State,
+    goldTree: DiscourseTree,
+    edus: Array[Array[(Int, Int)]],
+    doc: Document
+  ): State = {
     val scores = 0 to currState.size - 2 map { i =>
       val features = getFeatures(currState, i, doc, edus, corpusStats)
       val labeledScores = csc.predictLabeledScores(features)
@@ -33,11 +37,13 @@ class LearnedPolicy(
     nextState
   }
 
-  def getFeatures(state: State,
-                  merge: Int,
-                  doc: Document,
-                  edus: Array[Array[(Int, Int)]],
-                  corpusStats: CorpusStats): Counter[String] = {
+  def getFeatures(
+    state: State,
+    merge: Int,
+    doc: Document,
+    edus: Array[Array[(Int, Int)]],
+    corpusStats: CorpusStats
+  ): Counter[String] = {
     val left = state(merge)
     val right = state(merge + 1)
     val d = relModel.mkDatum(left, right, doc, edus, StructureClassifier.NEG)
@@ -47,5 +53,5 @@ class LearnedPolicy(
   }
 
   def parseWithGoldEDUs(tree: DiscourseTree, doc: Document): DiscourseTree =
-    getCompletePath(tree, doc).last.head
+    getCompletePath(tree, mkGoldEDUs(tree, doc), doc).last.head
 }

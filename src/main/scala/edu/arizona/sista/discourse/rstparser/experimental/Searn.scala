@@ -47,7 +47,7 @@ class Searn(
       for (i <- Random.shuffle(indices)) {
         val (tree, doc) = treedocs(i)
         val edus = mkGoldEDUs(tree, doc)
-        val path = policy.getCompletePath(tree, doc)
+        val path = policy.getCompletePath(tree, edus, doc)
 
         for (state <- path.init) { // last state in path is a solution
           val nextStatesMergedIndex = getNextStatesWithMergedIndex(state, doc, edus, relModel)

@@ -8,16 +8,20 @@ trait Policy {
   // a policy must be able to "predict" the next state
   // given the current state and the gold tree
   // NOTE the gold tree may be ignored depending on the Policy type
-  def getNextState(currState: State, goldTree: DiscourseTree, doc: Document): State
+  def getNextState(
+    currState: State,
+    goldTree: DiscourseTree,
+    edus: Array[Array[(Int, Int)]],
+    doc: Document
+  ): State
 
   // builds a path from the starting state to a valid result
-  def getCompletePath(tree: DiscourseTree, doc: Document): Seq[State] = {
+  def getCompletePath(tree: DiscourseTree, edus: Array[Array[(Int, Int)]], doc: Document): Seq[State] = {
     @annotation.tailrec
     def mkPath(path: Seq[State]): Seq[State] =
-      if (path.last.size > 1) mkPath(path :+ getNextState(path.last, tree, doc))
+      if (path.last.size > 1) mkPath(path :+ getNextState(path.last, tree, edus, doc))
       else path
 
-    val edus = mkGoldEDUs(tree, doc)
     val startState = edusToState(edus, doc)
     mkPath(Vector(startState))
   }
