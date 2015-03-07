@@ -18,6 +18,10 @@ trait Mention extends Equals {
   def start: Int = tokenInterval.start
   def end: Int = tokenInterval.end
 
+  // character offsets
+  def startOffset: Int = document.sentences(sentence).startOffsets(start)
+  def endOffset: Int = document.sentences(sentence).endOffsets(end - 1)
+
   // this method should be overriden by Mention subclases
   // to return the label and all the relevant labels in some taxonomy
   def allLabels: Set[String] = Set(label)
@@ -69,6 +73,21 @@ class EventMention(val label: String,
   override def tokenInterval: Interval = {
     val allStarts = trigger.start +: arguments.values.flatMap(_.map(_.start)).toSeq
     val allEnds = trigger.end +: arguments.values.flatMap(_.map(_.end)).toSeq
+    Interval(allStarts.min, allEnds.max)
+  }
+}
+
+class RelationMention(val label: String,
+                      val arguments: Map[String, Seq[Mention]],
+                      val sentence: Int,
+                      val document: Document,
+                      val keep: Boolean,
+                      val foundBy: String) extends Mention {
+  require(arguments.values.flatten.nonEmpty, "RelationMentions need arguments")
+  // token interval that contains all matched arguments
+  override def tokenInterval: Interval = {
+    val allStarts = arguments.values.flatMap(_.map(_.start)).toSeq
+    val allEnds = arguments.values.flatMap(_.map(_.end)).toSeq
     Interval(allStarts.min, allEnds.max)
   }
 }
